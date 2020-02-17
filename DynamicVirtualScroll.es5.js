@@ -1,3 +1,12 @@
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+exports.virtualScrollDriver = virtualScrollDriver;
 /**
  * Virtual scroll driver for dynamic row heights
  *
@@ -21,14 +30,13 @@
  *         newState.middlePlaceholderHeight - height of the second (middle) placeholder. omit placeholder if it is 0
  *         newState.lastItemCount - item count to be rendered in the end of the list
  */
-export function virtualScrollDriver(props, oldState, getRenderedItemHeight)
-{
-    const bufferItems = props.bufferItems || 0;
-    const viewportHeight = props.viewportHeight;
-    const viewportItemCount = Math.ceil(viewportHeight/props.minRowHeight) + bufferItems; // +border?
-    const newState = {
-        viewportHeight,
-        viewportItemCount,
+function virtualScrollDriver(props, oldState, getRenderedItemHeight) {
+    var bufferItems = props.bufferItems || 0;
+    var viewportHeight = props.viewportHeight;
+    var viewportItemCount = Math.ceil(viewportHeight / props.minRowHeight) + bufferItems; // +border?
+    var newState = {
+        viewportHeight: viewportHeight,
+        viewportItemCount: viewportItemCount,
         totalItems: props.totalItems,
         scrollHeightInItems: oldState.scrollHeightInItems,
         avgRowHeight: oldState.avgRowHeight,
@@ -38,124 +46,106 @@ export function virtualScrollDriver(props, oldState, getRenderedItemHeight)
         middleItemCount: 0,
         middlePlaceholderHeight: 0,
         lastItemCount: props.totalItems,
-        lastItemsTotalHeight: oldState.lastItemsTotalHeight,
+        lastItemsTotalHeight: oldState.lastItemsTotalHeight
     };
-    if (!oldState.viewportHeight)
-    {
-        oldState = { ...oldState };
-        for (let k in newState)
-        {
+    if (!oldState.viewportHeight) {
+        oldState = _extends({}, oldState);
+        for (var k in newState) {
             oldState[k] = oldState[k] || 0;
         }
     }
-    if (2*newState.viewportItemCount >= props.totalItems)
-    {
+    if (2 * newState.viewportItemCount >= props.totalItems) {
         // We need at least 2*viewportItemCount to perform virtual scrolling
         return newState;
     }
-    newState.lastItemCount = newState.viewportItemCount - (bufferItems);
+    newState.lastItemCount = newState.viewportItemCount - bufferItems;
     {
-        let lastItemsHeight = 0, lastVisibleItems = 0;
-        let lastItemSize;
-        while (lastItemsHeight < viewportHeight)
-        {
+        var lastItemsHeight = 0,
+            lastVisibleItems = 0;
+        var lastItemSize = void 0;
+        while (lastItemsHeight < viewportHeight) {
             lastItemSize = getRenderedItemHeight(props.totalItems - 1 - lastVisibleItems);
-            if (!lastItemSize)
-            {
+            if (!lastItemSize) {
                 // Some required items in the end are missing
                 lastItemSize = 0;
             }
             lastItemsHeight += lastItemSize < props.minRowHeight ? props.minRowHeight : lastItemSize;
             lastVisibleItems++;
         }
-        newState.scrollHeightInItems = props.totalItems - lastVisibleItems + (lastItemsHeight-viewportHeight) / lastItemSize;
+        newState.scrollHeightInItems = props.totalItems - lastVisibleItems + (lastItemsHeight - viewportHeight) / lastItemSize;
         // Calculate heights of the rest of items
-        while (lastVisibleItems < newState.viewportItemCount)
-        {
+        while (lastVisibleItems < newState.viewportItemCount) {
             lastItemsHeight += getRenderedItemHeight(props.totalItems - 1 - lastVisibleItems);
             lastVisibleItems++;
         }
         newState.lastItemsTotalHeight = lastItemsHeight;
         newState.avgRowHeight = lastItemsHeight / lastVisibleItems;
-        newState.avgRowHeight = !oldState.avgRowHeight || newState.avgRowHeight > oldState.avgRowHeight
-            ? newState.avgRowHeight
-            : oldState.avgRowHeight;
+        newState.avgRowHeight = !oldState.avgRowHeight || newState.avgRowHeight > oldState.avgRowHeight ? newState.avgRowHeight : oldState.avgRowHeight;
     }
     newState.targetHeight = newState.avgRowHeight * newState.scrollHeightInItems + newState.viewportHeight;
-    const scrollTop = props.scrollTop;
-    let scrollPos = scrollTop / (newState.targetHeight - newState.viewportHeight);
-    if (scrollPos > 1)
-    {
+    var scrollTop = props.scrollTop;
+    var scrollPos = scrollTop / (newState.targetHeight - newState.viewportHeight);
+    if (scrollPos > 1) {
         // Rare case - avgRowHeight isn't enough and we need more
         // avgRowHeight will be corrected after rendering all items
         scrollPos = 1;
     }
-    let firstVisibleItem = scrollPos * newState.scrollHeightInItems;
+    var firstVisibleItem = scrollPos * newState.scrollHeightInItems;
 
     // Fix visible
-    let firstVisibleIndex =  Math.floor(firstVisibleItem) - (bufferItems / 2);
+    var firstVisibleIndex = Math.floor(firstVisibleItem) - bufferItems / 2;
 
-    if (firstVisibleIndex < 0)
-    {
+    if (firstVisibleIndex < 0) {
         firstVisibleIndex = 0;
     }
 
-    const firstVisibleItemOffset = firstVisibleItem - firstVisibleIndex;
+    var firstVisibleItemOffset = firstVisibleItem - firstVisibleIndex;
     // FIXME: Render some items before current for smoothness
     firstVisibleItem = firstVisibleIndex;
-    let firstVisibleItemHeight = getRenderedItemHeight(firstVisibleItem) || newState.avgRowHeight;
-    newState.topPlaceholderHeight = scrollTop - firstVisibleItemHeight*firstVisibleItemOffset;
-    if (newState.topPlaceholderHeight < 0)
-    {
+    var firstVisibleItemHeight = getRenderedItemHeight(firstVisibleItem) || newState.avgRowHeight;
+    newState.topPlaceholderHeight = scrollTop - firstVisibleItemHeight * firstVisibleItemOffset;
+    if (newState.topPlaceholderHeight < 0) {
         newState.topPlaceholderHeight = 0;
     }
-    if (firstVisibleItem + newState.viewportItemCount >= props.totalItems - newState.viewportItemCount)
-    {
+    if (firstVisibleItem + newState.viewportItemCount >= props.totalItems - newState.viewportItemCount) {
         // Only one placeholder is required
         newState.lastItemCount = props.totalItems - firstVisibleItem;
-        let sum = 0, count = props.totalItems - newState.viewportItemCount - firstVisibleItem;
+        var sum = 0,
+            count = props.totalItems - newState.viewportItemCount - firstVisibleItem;
         count = count > 0 ? count : 0;
-        for (let i = 0; i < count; i++)
-        {
-            const itemSize = getRenderedItemHeight(i+newState.firstMiddleItem);
-            if (!itemSize)
-            {
+        for (var i = 0; i < count; i++) {
+            var itemSize = getRenderedItemHeight(i + newState.firstMiddleItem);
+            if (!itemSize) {
                 // Some required items in the middle are missing
                 return newState;
             }
             sum += itemSize;
         }
-        const correctedAvg = (sum + newState.lastItemsTotalHeight) / (count + newState.viewportItemCount);
-        if (correctedAvg > newState.avgRowHeight)
-        {
+        var correctedAvg = (sum + newState.lastItemsTotalHeight) / (count + newState.viewportItemCount);
+        if (correctedAvg > newState.avgRowHeight) {
             newState.avgRowHeight = correctedAvg;
         }
-    }
-    else
-    {
+    } else {
         newState.firstMiddleItem = firstVisibleItem;
         newState.middleItemCount = newState.viewportItemCount;
-        let sum = 0;
-        for (let i = 0; i < newState.middleItemCount; i++)
-        {
-            const itemSize = getRenderedItemHeight(i+newState.firstMiddleItem);
-            if (!itemSize)
-            {
+        var _sum = 0;
+        for (var _i = 0; _i < newState.middleItemCount; _i++) {
+            var _itemSize = getRenderedItemHeight(_i + newState.firstMiddleItem);
+            if (!_itemSize) {
                 // Some required items in the middle are missing
                 return newState;
             }
-            sum += itemSize;
+            _sum += _itemSize;
         }
-        newState.middlePlaceholderHeight = newState.targetHeight - sum - newState.lastItemsTotalHeight - newState.topPlaceholderHeight;
-        if (newState.middlePlaceholderHeight < 0)
-        {
+        newState.middlePlaceholderHeight = newState.targetHeight - _sum - newState.lastItemsTotalHeight - newState.topPlaceholderHeight;
+        if (newState.middlePlaceholderHeight < 0) {
             newState.middlePlaceholderHeight = 0;
         }
-        const correctedAvg = (sum + newState.lastItemsTotalHeight) / (newState.middleItemCount + newState.viewportItemCount);
-        if (correctedAvg > newState.avgRowHeight)
-        {
-            newState.avgRowHeight = correctedAvg;
+        var _correctedAvg = (_sum + newState.lastItemsTotalHeight) / (newState.middleItemCount + newState.viewportItemCount);
+        if (_correctedAvg > newState.avgRowHeight) {
+            newState.avgRowHeight = _correctedAvg;
         }
     }
     return newState;
 }
+
